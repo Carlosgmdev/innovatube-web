@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from 'zod'
 import { useEffect, useState } from "react"
-import { RegisterForm, User } from "../../types/auth"
+import { LoginResponse, RegisterForm } from "../../types/auth"
 import throwFormErrors from "../../utils/FormErrorsHandling"
 import VisibilityTwoToneIcon from '@mui/icons-material/VisibilityTwoTone'
 import VisibilityOffTwoToneIcon from '@mui/icons-material/VisibilityOffTwoTone'
@@ -14,11 +14,12 @@ import { API_URL } from "../../config/constants"
 import throwAxiosErros from "../../utils/AxiosErrorsHandling"
 import useAuthStore from "../../store/useAuthStore"
 import { toast } from "sonner"
+import { setCookie } from "../../utils/Cookies"
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false)
   const { setLoading } = useGlobalStore()
-  const { setUser } = useAuthStore()
+  const { setUser, setToken } = useAuthStore()
   const navigate = useNavigate()
 
   const loginSchema = z.object({
@@ -30,13 +31,16 @@ const Register = () => {
   })
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterForm>({ resolver: zodResolver(loginSchema) })
 
-  const onSubmit = async (data: RegisterForm) => {
+  const onSubmit = async (data: RegisterForm): Promise<void> => {
     setLoading(true)
     try {
-      const res = await axios.post<User>(`${API_URL}/users/register`, data)
-      setUser(res.data)
-      window.localStorage.setItem('user', JSON.stringify(res.data))
-      toast.success(`Bienvenido, ${res.data.firstName}!`)
+      const res = await axios.post<LoginResponse>(`${API_URL}/users/register`, data)
+      const { user, token } = res.data
+      setUser(user)
+      setCookie('jwtToken', token, 30)
+      setToken(token)
+      window.localStorage.setItem('user', JSON.stringify(user))
+      toast.success(`Bienvenido, ${user.firstName}!`)
       navigate('/app')
     } catch (err) {
       throwAxiosErros(err as AxiosError)

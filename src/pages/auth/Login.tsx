@@ -1,15 +1,26 @@
 import { Button, Paper, TextField, Typography } from "@mui/material"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { useForm } from 'react-hook-form'
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from 'zod'
 import { useEffect } from "react"
-import { LoginForm } from "../../types/auth"
+import { LoginForm, LoginResponse } from "../../types/auth"
 import throwFormErrors from "../../utils/FormErrorsHandling"
+import useGlobalStore from "../../store/useGlobalStore"
+import axios, { AxiosError } from "axios"
+import { API_URL } from "../../config/constants"
+import { setCookie } from "../../utils/Cookies"
+import { toast } from "sonner"
+import useAuthStore from "../../store/useAuthStore"
+import throwAxiosErros from "../../utils/AxiosErrorsHandling"
 
 const Login = () => {
+  const { setLoading } = useGlobalStore()
+  const { setUser, setToken } = useAuthStore()
+  const navigate = useNavigate()
+
   const loginSchema = z.object({
-    email: z.string().email({ message: 'Por favor, ingresa una dirección de correo válida' }),
+    emailOrUsername: z.string().min(2, { message: 'El nombre de usuario o correo debe tener al menos 2 caracteres' }),
     password: z.string().min(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
   })
 
@@ -17,8 +28,22 @@ const Login = () => {
     resolver: zodResolver(loginSchema)
   })
 
-  const onSubmit = (data: LoginForm): void => {
-    console.log(data)
+  const onSubmit = async (data: LoginForm): Promise<void> => {
+    setLoading(true)
+    try {
+      const res = await axios.post<LoginResponse>(`${API_URL}/users/login`, data)
+      const { user, token } = res.data
+      setUser(user)
+      setToken(token)
+      setCookie('jwtToken', token, 30)
+      window.localStorage.setItem('user', JSON.stringify(user))
+      toast.success(`Bienvenido, ${user.firstName}!`)
+      navigate('/app')
+    } catch (err) {
+      throwAxiosErros(err as AxiosError)
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => throwFormErrors(errors), [errors])
@@ -49,8 +74,8 @@ const Login = () => {
             variant='outlined'
             size='small'
             required
-            {...register('email')}
-            error={errors.email ? true : false}
+            {...register('emailOrUsername')}
+            error={errors.emailOrUsername ? true : false}
           />
           <TextField
             fullWidth

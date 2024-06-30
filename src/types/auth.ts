@@ -1,5 +1,5 @@
 export interface LoginForm {
-  email: string
+  emailOrUsername: string
   password: string
 }
 
@@ -17,4 +17,9 @@ export interface User {
   lastName: string
   email: string
   username: string
+}
+
+export interface LoginResponse {
+  user: User
+  token: string
 }
