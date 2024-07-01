@@ -10,17 +10,20 @@ import VisibilityTwoToneIcon from '@mui/icons-material/VisibilityTwoTone'
 import VisibilityOffTwoToneIcon from '@mui/icons-material/VisibilityOffTwoTone'
 import useGlobalStore from "../../store/useGlobalStore"
 import axios, { AxiosError } from "axios"
-import { API_URL } from "../../config/constants"
+import { API_URL, RECAPTCHA_SITE_KEY } from "../../config/constants"
 import throwAxiosErros from "../../utils/AxiosErrorsHandling"
 import useAuthStore from "../../store/useAuthStore"
 import { toast } from "sonner"
 import { setCookie } from "../../utils/Cookies"
+import ReCAPTCHA from 'react-google-recaptcha'
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false)
   const { setLoading } = useGlobalStore()
   const { setUser, setToken } = useAuthStore()
   const navigate = useNavigate()
+  const [passwordConfirm, setPasswordConfirm] = useState<string>('')
+  const [reCaptcha, setReCaptcha] = useState<string>('')
 
   const loginSchema = z.object({
     firstName: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
@@ -34,7 +37,15 @@ const Register = () => {
   const onSubmit = async (data: RegisterForm): Promise<void> => {
     setLoading(true)
     try {
-      const res = await axios.post<LoginResponse>(`${API_URL}/users/register`, data)
+      if (data.password !== passwordConfirm) {
+        toast.error('Las contraseñas no coinciden')
+        return
+      }
+      if (!reCaptcha) {
+        toast.error('Por favor, completa el reCAPTCHA')
+        return
+      }
+      const res = await axios.post<LoginResponse>(`${API_URL}/users/register`, { ...data, reCaptcha })
       const { user, token } = res.data
       setUser(user)
       setCookie('jwtToken', token, 30)
@@ -48,6 +59,8 @@ const Register = () => {
       setLoading(false)
     }
   }
+
+  const handleReCaptcha = (token: string | null) => setReCaptcha(token || '')
 
   useEffect(() => throwFormErrors(errors), [errors])
 
@@ -109,24 +122,38 @@ const Register = () => {
             {...register('username')}
             error={errors.username ? true : false}
           />
-          <TextField
-            fullWidth
-            label='Contraseña'
-            variant='outlined'
-            size='small'
-            type={showPassword ? 'text' : 'password'}
-            required
-            error={errors.password ? true : false}
-            {...register('password')}
-            InputProps={{
-              endAdornment: (
-                <Tooltip title='hola'>
-                  <IconButton onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <VisibilityTwoToneIcon /> : <VisibilityOffTwoToneIcon />}
-                  </IconButton>
-                </Tooltip>
-              )
-            }}
+          <div className='flex items-center gap-2'>
+            <TextField
+              fullWidth
+              label='Contraseña'
+              variant='outlined'
+              size='small'
+              type={showPassword ? 'text' : 'password'}
+              required
+              error={errors.password ? true : false}
+              {...register('password')}
+            />
+            <TextField
+              fullWidth
+              label='Confirmar contraseña'
+              variant='outlined'
+              size='small'
+              type={showPassword ? 'text' : 'password'}
+              required
+              error={errors.password ? true : false}
+              name='passwordConfirm'
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+            />
+            <Tooltip title='hola'>
+              <IconButton onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? <VisibilityOffTwoToneIcon /> : <VisibilityTwoToneIcon />}
+              </IconButton>
+            </Tooltip>
+          </div>
+          <ReCAPTCHA
+            sitekey={RECAPTCHA_SITE_KEY}
+            onChange={handleReCaptcha}
+            className='self-center'
           />
           <Button
             fullWidth
@@ -139,9 +166,15 @@ const Register = () => {
           </Button>
         </form>
 
-        <Typography variant='body2'>
-          ¿Ya tienes una cuenta? <Link to='/login'>Inicia sesión</Link>
-        </Typography>
+
+        <div className='flex flex-col items-center gap-1'>
+          <Typography variant='body2'>
+            ¿Ya tienes una cuenta? <Link to='/login' className='font-bold'>Inicia sesión</Link>
+          </Typography>
+          <Typography variant='body2'>
+            ¿Olvidaste tu contraseña? <Link to='/forgot' className='font-bold'>Recupérala</Link>
+          </Typography>
+        </div>
 
       </Paper>
 
