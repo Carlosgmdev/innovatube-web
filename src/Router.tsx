@@ -4,7 +4,6 @@ import Register from "./pages/auth/Register";
 import Layout from "./pages/app/Layout";
 import Forgot from "./pages/auth/Forgot";
 import Recovery from "./pages/auth/Recovery";
-import MyFavorites from "./pages/app/Favorites";
 import Home from "./pages/app/Home";
 import { getCookie } from "./utils/Cookies";
 import { useEffect, useState } from "react";

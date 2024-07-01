@@ -23,7 +23,7 @@ const Home = () => {
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { token } = useAuthStore();
 
-  const handleChangePage = (event: React.ChangeEvent<unknown>, value: number) => {
+  const handleChangePage = (_event: React.ChangeEvent<unknown>, value: number) => {
     if (currentPage === value) return;
     if (value > currentPage) setFilters({ ...filters, pageToken: videos?.nextPageToken || '' });
     if (value < currentPage) setFilters({ ...filters, pageToken: videos?.prevPageToken || '' });

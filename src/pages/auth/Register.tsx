@@ -52,7 +52,7 @@ const Register = () => {
       setToken(token)
       window.localStorage.setItem('user', JSON.stringify(user))
       toast.success(`Bienvenido, ${user.firstName}!`)
-      navigate('/app')
+      navigate('/app/home')
     } catch (err) {
       throwAxiosErros(err as AxiosError)
     } finally {
@@ -162,7 +162,7 @@ const Register = () => {
             type='submit'
             onClick={handleSubmit(onSubmit)}
           >
-            Iniciar sesión
+            Registrarse
           </Button>
         </form>
 
